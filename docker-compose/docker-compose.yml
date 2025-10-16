@@ -1,0 +1,319 @@
+services:
+  cadvisor:
+    # cAdvisor is a tool for monitoring container performance
+    # https://console.cloud.google.com/artifacts/docker/cadvisor/us/gcr.io/cadvisor?pli=1&invt=Ab3vrA&inv=1
+    image: gcr.io/cadvisor/cadvisor:v0.52.0
+    #platform: linux/arm64
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "8090:8080" # Exposes cAdvisor's web interface on port 8090
+    env_file:
+      - .env.cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro # Mounts the root filesystem as read-only
+      - /sys:/sys:ro # Mounts the /sys directory as read-only
+      - /var/run:/var/run:ro # Mounts the /var/run directory with read-write permissions
+      - /var/run/docker.sock:/var/run/docker.sock:ro # 실행중인 모든 컨테이너 정보. 컨테이너 생성/시작/중지 등의 이벤트 모니터링
+      - /var/lib/docker/:/var/lib/docker:ro # Uncomment if using default Docker directory
+      #- /var/snap/docker/common/var-lib-docker:/var/snap/docker/common/var-lib-docker:ro # Mounts Docker's data directory as read-only
+      - /dev/disk/:/dev/disk:ro # Mounts the /dev/disk directory as read-only
+    devices:
+      - /dev/kmsg:/dev/kmsg
+  grafana:
+    # Grafana is an open-source platform for monitoring and observability
+    # https://hub.docker.com/r/grafana/grafana
+    image: grafana/grafana:12.2.0
+    #platform: linux/arm64
+    container_name: grafana
+    restart: unless-stopped
+    user: ":"
+    env_file:
+      - .env.grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ${DATA_DIR}/grafana/data:/var/lib/grafana
+      - ${DATA_DIR}/grafana:/etc/grafana/provisioning/datasources
+    depends_on:
+      - jaeger
+      - prometheus
+      - tempo
+      - loki
+  jaeger:
+    # Jaeger is an open-source, end-to-end distributed tracing system
+    # https://hub.docker.com/r/jaegertracing/jaeger
+    image: "jaegertracing/jaeger:2.11.0"
+    #platform: linux/arm64
+    container_name: jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"
+      - "4417:4317"
+      - "4418:4318"
+    env_file:
+      - .env.jaeger
+  loki:
+    # Loki is a log aggregation system designed to work seamlessly with Grafana
+    # https://hub.docker.com/r/grafana/loki
+    image: grafana/loki:3
+    #platform: linux/arm64
+    container_name: loki
+    restart: unless-stopped
+    env_file:
+      - .env.loki
+    command: -config.file=/etc/loki/loki.yaml
+    user: ":"
+    ports:
+      - "3100:3100"
+      - "9096:9096"
+    healthcheck:
+        test: wget -q --tries=1 -O- http://localhost:3100/ready 
+        interval: 3s
+        timeout: 3s
+        retries: 10
+        start_period: 10s
+    volumes:
+      - ./loki.yaml:/etc/loki/loki.yaml
+      - ${DATA_DIR}/loki/data:/loki
+  mysql:
+    # MySQL is a popular open-source relational database management system
+    # https://hub.docker.com/_/mysql
+    image: mysql:9.4
+    #platform: linux/arm64
+    container_name: mysql
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    env_file:
+      - .env.mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./mysql.conf:/etc/mysql/my.cnf
+      - ${DATA_DIR}/mysql:/var/lib/mysql
+  node-exporter:
+    # Node Exporter is a Prometheus exporter for hardware and OS metrics
+    # https://hub.docker.com/r/prom/node-exporter/tags
+    image: prom/node-exporter:latest
+    #platform: linux/arm64
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    env_file:
+      - .env.node-exporter
+  opensearch:
+    # https://hub.docker.com/r/opensearchproject/opensearch
+    image: opensearchproject/opensearch:3.3.0
+    #platform: linux/arm64
+    container_name: opensearch-node1
+    restart: unless-stopped
+    user: "1000:1000" # sudo chown -R username:group directory
+    #user: root
+    ports:
+      - 9200:9200 # REST API
+      - 9600:9600 # Performance Analyzer
+    env_file:
+      - .env.opensearch
+    ulimits:
+      memlock:
+        soft: -1 # Set memlock to unlimited (no soft or hard limit)
+        hard: -1
+      nofile:
+        soft: 65536 # Maximum number of open files for the opensearch user - set to at least 65536
+        hard: 65536
+    volumes:
+      - ${DATA_DIR}/opensearch-data1:/usr/share/opensearch/data # Creates volume called opensearch-data1 and mounts it to the container
+  opensearch-dashboards:
+    # https://hub.docker.com/r/opensearchproject/opensearch-dashboards
+    # Make sure the version of opensearch-dashboards matches the version of opensearch installed on other nodes
+    image: opensearchproject/opensearch-dashboards:3.3.0
+    #platform: linux/arm64
+    container_name: opensearch-dashboards
+    restart: unless-stopped
+    ports:
+      - 5601:5601 # Map host port 5601 to container port 5601
+    expose:
+      - "5601" # Expose port 5601 for web access to OpenSearch Dashboards
+    env_file:
+      - .env.opensearch-dashboards
+    volumes:
+      - ./custom-opensearch_dashboards.yml:/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml
+    networks:
+      - default
+    depends_on:
+      - opensearch
+  data-prepper:
+    # OpenSearch Data Prepper is a server-side data collector for filtering, enriching, transforming, normalizing, and aggregating data
+    # https://hub.docker.com/r/opensearchproject/data-prepper
+    image: opensearchproject/data-prepper:2
+    #platform: linux/amd64  # Data Prepper는 ARM64를 지원하지 않으므로 에뮬레이션 사용
+    container_name: data-prepper
+    restart: unless-stopped
+    ports:
+      - "21890:21890" # OTLP gRPC receiver for traces
+      - "21891:21891" # OTLP gRPC receiver for service map
+      - "21892:21892" # OTLP gRPC receiver for logs
+      - "4900:4900"   # HTTP API and health check endpoint
+      - "9601:9600"   # Prometheus metrics endpoint
+    volumes:
+      - ./data-prepper-config.yaml:/usr/share/data-prepper/data-prepper-config.yaml
+      - ./data-prepper-simple.yaml:/usr/share/data-prepper/pipelines/pipelines.yaml
+      - ${DATA_DIR}/data-prepper/data:/usr/share/data-prepper/data
+      - ${DATA_DIR}/data-prepper/logs:/usr/share/data-prepper/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4900/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - opensearch
+    networks:
+      - default
+  otel-collector:
+    # OpenTelemetry Collector is a vendor-agnostic agent for collecting telemetry data
+    # https://hub.docker.com/r/otel/opentelemetry-collector-contrib
+    image: otel/opentelemetry-collector-contrib:0.137.0
+    #image: otel/opentelemetry-collector-contrib:0.137.0-arm64
+    #platform: linux/arm64
+    container_name: otel-collector
+    restart: unless-stopped
+    command: [ "--config=/etc/otel-collector.yaml" ]
+    env_file:
+      - .env.otel-collector
+    volumes:
+      - ./otel-collector.yaml:/etc/otel-collector.yaml
+    ports:
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # health_check extension
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "55679:55679" # zpages extension
+    depends_on:
+      - jaeger
+      - loki
+      - prometheus
+      - tempo
+      - data-prepper
+  portainer:
+    # Portainer is a lightweight management UI which allows you to easily manage your Docker containers
+    # https://hub.docker.com/r/portainer/portainer-ce
+    image: portainer/portainer-ce:2.35.0
+    #platform: linux/arm64
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env.portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DATA_DIR}/portainer/data:/data
+  prometheus:
+    # Prometheus is an open-source systems monitoring and alerting toolkit
+    # https://hub.docker.com/r/prom/prometheus/tags
+    image: prom/prometheus:latest
+    #platform: linux/arm64
+    container_name: prometheus
+    restart: unless-stopped
+    user: ":"
+    ports:
+      - "9090:9090"
+    command:
+      - --web.enable-lifecycle
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --storage.tsdb.retention.time=7d
+      - --enable-feature=native-histograms
+    volumes:
+      - ${DATA_DIR}/prometheus/data:/prometheus
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    env_file:
+      - .env.prometheus
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "8m"
+        max-file: "10"
+  rabbitmq:
+    # RabbitMQ is a messaging broker that enables applications to communicate with each other
+    # https://hub.docker.com/_/rabbitmq
+    image: rabbitmq:4.1.4-management
+    #platform: linux/arm64
+    container_name: rabbitmq
+    hostname: rabbitmq-server  # 고정 호스트네임 추가
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "15692:15692" # prometheus metric
+    env_file:
+      - .env.rabbitmq
+    volumes:
+      - ${DATA_DIR}/rabbitmq/data:/var/lib/rabbitmq # Persists Mnesia data for RabbitMQ
+      - ${DATA_DIR}/rabbitmq/logs:/var/log/rabbitmq # Persists RabbitMQ logs
+  valkey:
+    # Valkey is a Redis-compatible database with enhanced features
+    # https://hub.docker.com/r/valkey/valkey
+    image: valkey/valkey:8.1.4
+    #platform: linux/arm64
+    container_name: valkey
+    restart: unless-stopped
+    env_file:
+      - .env.valkey
+    labels:
+      - "mode=standalone"
+    ports:
+      - "6379:6379"
+      - "6380:6379" # For Redis Sentinel
+    volumes:
+      - ${DATA_DIR}/valkey:/data
+  redis-exporter:
+    # Redis Exporter is a Prometheus exporter for Redis metrics
+    # https://hub.docker.com/r/anchorfree/redis-exporter/tags
+    image: oliver006/redis_exporter:latest
+    #platform: linux/arm64
+    container_name: redis_exporter
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    command:
+      - '--redis.addr=redis://valkey:6379'
+    links:
+      - valkey
+  tempo:
+    # Tempo is a distributed tracing backend that integrates with Grafana
+    # https://hub.docker.com/r/grafana/tempo
+    container_name: tempo
+    image: grafana/tempo:2.9.0
+    #platform: linux/arm64
+    restart: unless-stopped
+    env_file:
+      - .env.tempo
+    command:
+      [
+        "-config.file=/etc/tempo/config/tempo.yml",
+        "--auth.enabled=false"
+      ]
+    volumes:
+      - ./tempo.yml:/etc/tempo/config/tempo.yml
+      - ${DATA_DIR}/tempo:/tmp/tempo
+    ports:
+      - "14268:14268" # jaeger ingest
+      - "3200:3200"   # tempo
+      - "9095:9095"   # tempo grpc
+      - "4321:4317"   # otlp grpc
+      - "4320:4318"   # otlp http
+      - "9411:9411"   # zipkin
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G

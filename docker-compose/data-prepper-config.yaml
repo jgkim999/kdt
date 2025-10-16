@@ -1,0 +1,37 @@
+# Data Prepper Global Configuration
+
+# Server configuration
+server_port: 4900
+
+# SSL configuration (disabled for local development)
+ssl: false
+
+# Authentication configuration (disabled for simplicity)
+authentication:
+  disabled: true
+
+# Circuit breaker configuration
+circuit_breakers:
+  heap:
+    usage: 95
+    check_interval: 5s
+
+# Processor shutdown timeout
+processor_shutdown_timeout: 30s
+
+# Sink shutdown timeout
+sink_shutdown_timeout: 30s
+
+# Metric registries
+metric_registries:
+  - "Prometheus"
+
+# Metrics configuration
+metrics:
+  prometheus:
+    port: 9600
+
+# Logging configuration
+logging:
+  level: INFO
+  pattern: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

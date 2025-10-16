@@ -1,0 +1,104 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+
+# Load alerting rules
+rule_files:
+  - "data-prepper-alerts.yml"
+
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets: []
+    scheme: http
+    timeout: 10s
+    api_version: v2
+scrape_configs:
+- job_name: cadvisor
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  static_configs:
+  - targets:
+    - cadvisor:8080
+- job_name: loki
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - loki:3100
+#- job_name: otel-collector
+#  honor_timestamps: true
+#  scrape_interval: 15s
+#  scrape_timeout: 10s
+#  metrics_path: /metrics
+#  scheme: http
+#  static_configs:
+#  - targets:
+#    - otel-collector:9090
+- job_name: node_exporter
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  static_configs:
+  - targets:
+    - node-exporter:9100
+- job_name: prometheus
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - localhost:9090
+- job_name: rabbitmq
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - rabbitmq:15692
+- job_name: tempo
+  static_configs:
+  - targets: ['tempo:3200']
+  metrics_path: /metrics
+- job_name: tempo-metrics-generator
+  static_configs:
+  - targets: ['tempo:3200']
+  metrics_path: /metrics/generator
+- job_name: valkey
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - redis_exporter:9121
+- job_name: data-prepper
+  honor_timestamps: true
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  metrics_path: /metrics
+  scheme: http
+  static_configs:
+  - targets:
+    - data-prepper:9601
+  metric_relabel_configs:
+  - source_labels: [__name__]
+    regex: 'dataprepper_.*'
+    target_label: component
+    replacement: 'data-prepper'
+  - source_labels: [pipeline]
+    target_label: data_prepper_pipeline
+  - source_labels: [processor]
+    target_label: data_prepper_processor

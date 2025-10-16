@@ -1,0 +1,96 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
+            - https://*
+
+processors:
+  resource:
+    attributes:
+      - key: pipeline_source
+        value: "otel-collector"
+        action: upsert
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+
+exporters:
+  # Loki for logs
+  otlphttp:
+    endpoint: http://loki:3100/otlp
+  # Data Prepper for logs
+  otlp/dataprepper-logs:
+    endpoint: data-prepper:21892
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+  # Data Prepper for traces
+  otlp/dataprepper-traces:
+    endpoint: data-prepper:21890
+    tls:
+      insecure: true
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+  # Backup exporters for redundancy
+  # Jaeger for traces
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  # Tempo for traces
+  otlphttp/tempo:
+    endpoint: http://tempo:4318
+    tls:
+      insecure: true
+  # Prometheus Remote Write for metrics
+  prometheusremotewrite:
+    endpoint: http://prometheus:9090/api/v1/write
+    tls:
+      insecure: true
+
+  debug:
+    verbosity: basic
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlp/dataprepper-traces, otlp/jaeger, otlphttp/tempo]
+
+    logs:
+      receivers: [otlp]
+      processors: [resource, batch]
+      exporters: [otlphttp, otlp/dataprepper-logs]
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheusremotewrite, debug]

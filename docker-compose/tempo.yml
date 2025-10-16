@@ -1,0 +1,71 @@
+server:
+  http_listen_port: 3200
+  log_level: info
+
+query_frontend:
+  search:
+    duration_slo: 15s
+    # If set to a non-zero value, it's value will be used to decide if query is within SLO or not.
+    # Query is within SLO if it returned 200 within duration_slo seconds OR processed throughput_slo bytes/s data.
+    throughput_bytes_slo: 0
+  trace_by_id:
+    duration_slo: 0s
+
+ingester:
+  trace_idle_period: 5s # default 10s, amount of time a trace must be idle before flushing it to the wal.
+  flush_check_period: 5s # default 10s, how often to sweep all tenants and move traces from live -> wal -> completed blocks.
+  max_block_bytes: 524288000 # maximum size of a block before cutting it (default: 524288000 = 500MB)
+  max_block_duration: 30m # maximum length of time before cutting a block (default: 30m)
+  # duration to keep blocks in the ingester after they have been flushed
+  # (default: 15m)
+  complete_block_timeout: 5m
+  # Flush all traces to backend when ingester is stopped, default = false
+  flush_all_on_shutdown: false
+  lifecycler:
+    ring:
+      replication_factor: 3
+      
+distributor:
+  receivers:
+    jaeger:                  # the receives all come from the OpenTelemetry collector.  more configuration information can
+        protocols:           # be found there: https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver
+          thrift_http:       #
+          grpc:              # for a production deployment you should only enable the receivers you need!
+          thrift_binary:     #
+          thrift_compact:    #        
+    zipkin:
+    otlp:
+      protocols:
+        http:
+          endpoint: "tempo:4318"
+        grpc:
+          endpoint: "tempo:4317"
+
+compactor:
+  compaction:
+    max_block_bytes: 100000000
+    block_retention: 24h  # overall Tempo trace retention. set for demo purposes
+
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: docker-compose
+  storage:
+    path: /tmp/tempo/generator/wal
+  # remote_write 및 headers 필드는 현재 버전에서 지원되지 않아 제거
+storage:
+  trace:
+    backend: local # backend configuration to use
+    wal:
+      path: /tmp/tempo/wal # where to store the the wal locally
+    local:
+      path: /tmp/tempo/blocks
+
+overrides:
+#  metrics_generator_processors: ['span-metrics', 'local-blocks'] # enables metrics generator
+  defaults:
+    ingestion:
+      rate_limit_bytes: 30000000
+      burst_size_bytes: 40000000
+ 
