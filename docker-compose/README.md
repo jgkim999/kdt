@@ -11,8 +11,10 @@ OpenSearch Data Prepper를 통한 로그 처리, Prometheus를 통한 메트릭 
 - **로그 처리**: OTEL Collector → Data Prepper → OpenSearch (+ 레거시 지원을 위한 Loki)
 - **메트릭**: Prometheus → Grafana
 - **트레이싱**: Jaeger/Tempo
-- **데이터베이스**: MySQL, RabbitMQ
+- **데이터베이스**: MySQL, RabbitMQ, Valkey
 - **시각화**: Grafana, OpenSearch Dashboards
+- **모니터링**: cAdvisor, Node Exporter, Redis Exporter
+- **관리**: Portainer
 
 ## 빠른 시작
 
@@ -131,15 +133,15 @@ curl -X POST http://localhost:4318/v1/logs \
     }]
 ```
 
-### Log Query Examples
+### 로그 쿼리 예시
 
 #### OpenSearch REST API
 
 ```bash
-# Search all logs
+# 모든 로그 검색
 curl -X GET "localhost:9200/logs-*/_search?pretty"
 
-# Search by service name
+# 서비스 이름으로 검색
 curl -X GET "localhost:9200/logs-*/_search?pretty" \
   -H "Content-Type: application/json" \
   -d '{
@@ -150,7 +152,7 @@ curl -X GET "localhost:9200/logs-*/_search?pretty" \
     }
   }'
 
-# Search by log level
+# 로그 레벨로 검색
 curl -X GET "localhost:9200/logs-*/_search?pretty" \
   -H "Content-Type: application/json" \
   -d '{
@@ -161,7 +163,7 @@ curl -X GET "localhost:9200/logs-*/_search?pretty" \
     }
   }'
 
-# Time range query (last 1 hour)
+# 시간 범위 쿼리 (최근 1시간)
 curl -X GET "localhost:9200/logs-*/_search?pretty" \
   -H "Content-Type: application/json" \
   -d '{
@@ -174,7 +176,7 @@ curl -X GET "localhost:9200/logs-*/_search?pretty" \
     }
   }'
 
-# Complex query with filters
+# 필터가 포함된 복합 쿼리
 curl -X GET "localhost:9200/logs-*/_search?pretty" \
   -H "Content-Type: application/json" \
   -d '{
@@ -194,21 +196,21 @@ curl -X GET "localhost:9200/logs-*/_search?pretty" \
   }'
 ```
 
-#### OpenSearch Dashboards Queries
+#### OpenSearch Dashboards 쿼리
 
-Access OpenSearch Dashboards at `http://localhost:5601` and use these query examples in Discover:
+`http://localhost:5601`에서 OpenSearch Dashboards에 접속하여 Discover에서 다음 쿼리 예시를 사용하세요:
 
 ```
-# Basic text search
+# 기본 텍스트 검색
 service_name:"web-app" AND severity_text:"ERROR"
 
-# Time range with wildcard
+# 와일드카드를 사용한 시간 범위
 @timestamp:[now-1h TO now] AND message:*exception*
 
-# Field existence
+# 필드 존재 여부
 _exists_:trace_id AND service_name:"api-service"
 
-# Range queries
+# 범위 쿼리
 response_time:[100 TO 500] AND status_code:>=400
 ```
 
@@ -270,20 +272,42 @@ curl -X GET http://localhost:9600/metrics
 python3 generate_test_logs.py
 ```
 
-## Service Configuration
+## 서비스 설정
 
 ### OpenSearch
 
 - **URL**: `http://localhost:9200`
-- **Dashboards**: `http://localhost:5601`
-- **Default Index Pattern**: `logs-YYYY.MM.dd`
+- **대시보드**: `http://localhost:5601`
+- **기본 인덱스 패턴**: `logs-YYYY.MM.dd`
 
 ### Data Prepper
 
-- **Config**: `data-prepper.yaml`
-- **Environment**: `.env.data-prepper`
-- **Data Directory**: `./data-prepper-data`
-- **DLQ Directory**: `./data-prepper-data/dlq`
+- **설정**: `data-prepper.yaml`
+- **환경**: `.env.data-prepper`
+- **데이터 디렉토리**: `./data-prepper-data`
+- **DLQ 디렉토리**: `./data-prepper-data/dlq`
+
+### 추가 서비스
+
+#### Portainer
+- **URL**: `http://localhost:9000`
+- **설명**: Docker 컨테이너 관리 웹 UI
+
+#### Prometheus
+- **URL**: `http://localhost:9090`
+- **설명**: 메트릭 수집 및 모니터링
+
+#### Jaeger
+- **URL**: `http://localhost:16686`
+- **설명**: 분산 트레이싱 UI
+
+#### Tempo
+- **URL**: `http://localhost:3200`
+- **설명**: 분산 트레이싱 백엔드
+
+#### Valkey
+- **포트**: `6379`
+- **설명**: Redis 호환 인메모리 데이터베이스
 
 ## Grafana
 
