@@ -68,3 +68,11 @@ dotnet run ./Kdt.WebApi.csproj
 # windows
 dotnet run .\Kdt.WebApi.csproj
 ```
+
+![001](./images/lesson002/001.png)
+
+![002](./images/lesson002/002.png)
+
+![003](./images/lesson002/003.png)
+
+![004](./images/lesson002/004.png)
