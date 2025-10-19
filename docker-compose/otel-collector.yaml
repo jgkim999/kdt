@@ -23,36 +23,7 @@ processors:
 exporters:
   # Loki for logs
   otlphttp:
-    endpoint: http://loki:3100/otlp
-  # Data Prepper for logs
-  otlp/dataprepper-logs:
-    endpoint: data-prepper:21892
-    tls:
-      insecure: true
-    sending_queue:
-      enabled: true
-      num_consumers: 10
-      queue_size: 1000
-    retry_on_failure:
-      enabled: true
-      initial_interval: 1s
-      max_interval: 30s
-      max_elapsed_time: 300s
-  # Data Prepper for traces
-  otlp/dataprepper-traces:
-    endpoint: data-prepper:21890
-    tls:
-      insecure: true
-    sending_queue:
-      enabled: true
-      num_consumers: 10
-      queue_size: 1000
-    retry_on_failure:
-      enabled: true
-      initial_interval: 1s
-      max_interval: 30s
-      max_elapsed_time: 300s
-
+    endpoint: http://loki:3100/otlp  
   # Backup exporters for redundancy
   # Jaeger for traces
   otlp/jaeger:
@@ -83,14 +54,14 @@ service:
     traces:
       receivers: [otlp]
       processors: [resource, batch]
-      exporters: [otlp/dataprepper-traces, otlp/jaeger, otlphttp/tempo]
+      exporters: [otlp/jaeger, otlphttp/tempo]
 
     logs:
       receivers: [otlp]
       processors: [resource, batch]
-      exporters: [otlphttp, otlp/dataprepper-logs]
+      exporters: [debug, otlphttp]
 
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [prometheusremotewrite, debug]
+      exporters: [debug, prometheusremotewrite]

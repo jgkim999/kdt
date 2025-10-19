@@ -15,3 +15,7 @@ FastEndpoint
 ## [Lesson 004](Lesson004.md)
 
 Serilog
+
+## [Lesson 005](Lesson005.md)
+
+OpenTelemetry

@@ -1,26 +1,4 @@
 services:
-  cadvisor:
-    # cAdvisor is a tool for monitoring container performance
-    # https://console.cloud.google.com/artifacts/docker/cadvisor/us/gcr.io/cadvisor?pli=1&invt=Ab3vrA&inv=1
-    image: gcr.io/cadvisor/cadvisor:v0.52.0
-    #platform: linux/arm64
-    container_name: cadvisor
-    restart: unless-stopped
-    ports:
-      - "8090:8080" # Exposes cAdvisor's web interface on port 8090
-    env_file:
-      - .env.cadvisor
-    privileged: true
-    volumes:
-      - /:/rootfs:ro # Mounts the root filesystem as read-only
-      - /sys:/sys:ro # Mounts the /sys directory as read-only
-      - /var/run:/var/run:ro # Mounts the /var/run directory with read-write permissions
-      - /var/run/docker.sock:/var/run/docker.sock:ro # 실행중인 모든 컨테이너 정보. 컨테이너 생성/시작/중지 등의 이벤트 모니터링
-      - /var/lib/docker/:/var/lib/docker:ro # Uncomment if using default Docker directory
-      #- /var/snap/docker/common/var-lib-docker:/var/snap/docker/common/var-lib-docker:ro # Mounts Docker's data directory as read-only
-      - /dev/disk/:/dev/disk:ro # Mounts the /dev/disk directory as read-only
-    devices:
-      - /dev/kmsg:/dev/kmsg
   grafana:
     # Grafana is an open-source platform for monitoring and observability
     # https://hub.docker.com/r/grafana/grafana
@@ -94,86 +72,6 @@ services:
     volumes:
       - ./mysql.conf:/etc/mysql/my.cnf
       - ${DATA_DIR}/mysql:/var/lib/mysql
-  node-exporter:
-    # Node Exporter is a Prometheus exporter for hardware and OS metrics
-    # https://hub.docker.com/r/prom/node-exporter/tags
-    image: prom/node-exporter:latest
-    #platform: linux/arm64
-    container_name: node-exporter
-    restart: unless-stopped
-    ports:
-      - "9100:9100"
-    env_file:
-      - .env.node-exporter
-  opensearch:
-    # https://hub.docker.com/r/opensearchproject/opensearch
-    image: opensearchproject/opensearch:3.3.0
-    #platform: linux/arm64
-    container_name: opensearch-node1
-    restart: unless-stopped
-    user: "1000:1000" # sudo chown -R username:group directory
-    #user: root
-    ports:
-      - 9200:9200 # REST API
-      - 9600:9600 # Performance Analyzer
-    env_file:
-      - .env.opensearch
-    ulimits:
-      memlock:
-        soft: -1 # Set memlock to unlimited (no soft or hard limit)
-        hard: -1
-      nofile:
-        soft: 65536 # Maximum number of open files for the opensearch user - set to at least 65536
-        hard: 65536
-    volumes:
-      - ${DATA_DIR}/opensearch-data1:/usr/share/opensearch/data # Creates volume called opensearch-data1 and mounts it to the container
-  opensearch-dashboards:
-    # https://hub.docker.com/r/opensearchproject/opensearch-dashboards
-    # Make sure the version of opensearch-dashboards matches the version of opensearch installed on other nodes
-    image: opensearchproject/opensearch-dashboards:3.3.0
-    #platform: linux/arm64
-    container_name: opensearch-dashboards
-    restart: unless-stopped
-    ports:
-      - 5601:5601 # Map host port 5601 to container port 5601
-    expose:
-      - "5601" # Expose port 5601 for web access to OpenSearch Dashboards
-    env_file:
-      - .env.opensearch-dashboards
-    volumes:
-      - ./custom-opensearch_dashboards.yml:/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml
-    networks:
-      - default
-    depends_on:
-      - opensearch
-  data-prepper:
-    # OpenSearch Data Prepper is a server-side data collector for filtering, enriching, transforming, normalizing, and aggregating data
-    # https://hub.docker.com/r/opensearchproject/data-prepper
-    image: opensearchproject/data-prepper:2
-    #platform: linux/amd64  # Data Prepper는 ARM64를 지원하지 않으므로 에뮬레이션 사용
-    container_name: data-prepper
-    restart: unless-stopped
-    ports:
-      - "21890:21890" # OTLP gRPC receiver for traces
-      - "21891:21891" # OTLP gRPC receiver for service map
-      - "21892:21892" # OTLP gRPC receiver for logs
-      - "4900:4900"   # HTTP API and health check endpoint
-      - "9601:9600"   # Prometheus metrics endpoint
-    volumes:
-      - ./data-prepper-config.yaml:/usr/share/data-prepper/data-prepper-config.yaml
-      - ./data-prepper-simple.yaml:/usr/share/data-prepper/pipelines/pipelines.yaml
-      - ${DATA_DIR}/data-prepper/data:/usr/share/data-prepper/data
-      - ${DATA_DIR}/data-prepper/logs:/usr/share/data-prepper/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4900/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    depends_on:
-      - opensearch
-    networks:
-      - default
   otel-collector:
     # OpenTelemetry Collector is a vendor-agnostic agent for collecting telemetry data
     # https://hub.docker.com/r/otel/opentelemetry-collector-contrib
@@ -200,7 +98,6 @@ services:
       - loki
       - prometheus
       - tempo
-      - data-prepper
   portainer:
     # Portainer is a lightweight management UI which allows you to easily manage your Docker containers
     # https://hub.docker.com/r/portainer/portainer-ce

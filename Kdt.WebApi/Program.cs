@@ -1,4 +1,5 @@
 using FastEndpoints;
+using Kdt.WebApi;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,7 @@ builder.Configuration
     .AddEnvironmentVariables(); // 환경 변수가 JSON 설정을 오버라이드
 
 Log.Logger = new LoggerConfiguration()
+    .Enrich.WithMachineName()
     .WriteTo.Console()
     .CreateLogger();
 try
@@ -26,6 +28,9 @@ try
         lc.ReadFrom.Configuration(builder.Configuration);
         lc.ReadFrom.Services(services);
     });
+    
+    // OpenTelemetry 서비스 등록
+    builder.AddOpenTelemetryApplication(Log.Logger);
     
     builder.Services.AddFastEndpoints();
 
