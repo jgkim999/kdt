@@ -11,3 +11,7 @@ ASP.NET Core 기본 개념 및 실습
 ## [Lesson 003](Lesson003.md)
 
 FastEndpoint
+
+## [Lesson 004](Lesson004.md)
+
+Serilog
