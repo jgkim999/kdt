@@ -39,6 +39,12 @@ ECS
 
 따라서 중앙 집중식 로그 관리 시스템을 구축하여, 모든 로그를 한 곳에서 수집, 저장, 분석할 수 있도록 하는 것이 중요하다.
 
+[Virtical vs Horizontal Scaling](https://www.youtube.com/watch?v=1v687z1rhNA)
+
+[Load Balancer](https://www.youtube.com/watch?v=sXUh9vuOTXk)
+
+[SPOF](https://www.youtube.com/watch?v=Iy2YqgjXtRM)
+
 ## 컨테이너 실행
 
 [docker-compose.yml](./docker-compose/docker-compose.yml)
