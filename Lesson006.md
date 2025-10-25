@@ -7,15 +7,17 @@ NuGet 패키지 Scalar.AspNetCore는 OpenAPI 문서를 기반으로 아름다운
 ## 설치 Package
 
 ```bash
+dotnet add package FastEndpoints.Swagger
 dotnet add package Microsoft.AspNetCore.OpenApi
 dotnet add package Scalar.AspNetCore
+dotnet add package Swashbuckle.AspNetCore.SwaggerGen
 ```
 
 ## 실행 화면
 
-![003](./images/lesson006/003.png)
-
 [launchSettings.json](./Kdt.WebApi/Properties/launchSettings.json)
+
+![003](./images/lesson006/003.png)
 
 ![001](./images/lesson006/001.png)
 
