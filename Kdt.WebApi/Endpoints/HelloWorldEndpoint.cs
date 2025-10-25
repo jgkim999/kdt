@@ -2,6 +2,15 @@ using FastEndpoints;
 
 namespace Kdt.WebApi.Endpoints;
 
+public class HelloWorldEndpointSummary : Summary<HelloWorldEndpoint>
+{
+    public HelloWorldEndpointSummary()
+    {
+        Summary = "Returns a simple 'Hello World!' message.";
+        Description = "An endpoint that responds with 'Hello World!' to demonstrate basic functionality.";
+    }
+}
+
 public class HelloWorldEndpoint : EndpointWithoutRequest
 {
     private readonly ILogger<HelloWorldEndpoint> _logger;
@@ -15,6 +24,7 @@ public class HelloWorldEndpoint : EndpointWithoutRequest
     {
         Get("/");
         AllowAnonymous();
+        Summary(new HelloWorldEndpointSummary());
     }
     
     public override async Task HandleAsync(CancellationToken ct)

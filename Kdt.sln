@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kdt.WebApi", "Kdt.WebApi\Kdt.WebApi.csproj", "{A4D69F14-5599-4D15-A948-36D4B6B58DF3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kdt.Share", "Kdt.Share\Kdt.Share.csproj", "{AFF0025F-8272-400A-B6B4-72434233D08B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{A4D69F14-5599-4D15-A948-36D4B6B58DF3}.Release|x64.Build.0 = Release|Any CPU
 		{A4D69F14-5599-4D15-A948-36D4B6B58DF3}.Release|x86.ActiveCfg = Release|Any CPU
 		{A4D69F14-5599-4D15-A948-36D4B6B58DF3}.Release|x86.Build.0 = Release|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Debug|x64.Build.0 = Debug|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Debug|x86.Build.0 = Debug|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Release|x64.ActiveCfg = Release|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Release|x64.Build.0 = Release|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Release|x86.ActiveCfg = Release|Any CPU
+		{AFF0025F-8272-400A-B6B4-72434233D08B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

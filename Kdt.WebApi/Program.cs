@@ -1,5 +1,7 @@
 using FastEndpoints;
+using FastEndpoints.Swagger;
 using Kdt.WebApi;
+using Scalar.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,9 +35,29 @@ try
     builder.AddOpenTelemetryApplication(Log.Logger);
     
     builder.Services.AddFastEndpoints();
+    // Scalar API Reference 및 Swagger 설정
+    builder.Services.SwaggerDocument();
 
     var app = builder.Build();
     app.UseFastEndpoints();
+    
+    if (app.Environment.IsDevelopment())
+    {
+        // Swagger 및 Scalar API Reference 미들웨어 설정
+        app.UseOpenApi(options =>
+        {
+            options.Path = "/openapi/{documentName}.json";
+        });
+        app.MapOpenApi();
+        app.MapScalarApiReference(options =>
+        {
+            options
+                .WithTitle(app.Environment.ApplicationName)
+                .WithTheme(ScalarTheme.None)
+                .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.RestSharp)
+                .WithBundleUrl("https://cdn.jsdelivr.net/npm/@scalar/api-reference@latest/dist/browser/standalone.js");
+        });
+    }
 
     Log.Information("Starting application. {Environment}", environment);
     

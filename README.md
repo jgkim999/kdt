@@ -19,3 +19,7 @@ Serilog
 ## [Lesson 005](Lesson005.md)
 
 OpenTelemetry
+
+## [Lesson 006](Lesson006.md)
+
+Scalar
