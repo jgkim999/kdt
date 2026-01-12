@@ -4,7 +4,7 @@
 
 ## 개요
 
-이 저장소는 .NET 10.0을 사용한 최신 ASP.NET Core 개발을 시연하는 한국 개발자 교육(KDT) 저장소입니다. 로깅(Serilog), 분산 추적(OpenTelemetry), API 문서화(Scalar)를 포함한 완전한 관측 가능성 스택을 보여줍니다. 전통적인 MVC 컨트롤러 대신 구조화되고 고성능의 REST API 접근 방식인 FastEndpoints를 사용합니다.
+이 저장소는 .NET 10.0을 사용한 최신 ASP.NET Core 개발을 시연하는 KDT 교육 저장소입니다. 로깅(Serilog), 분산 추적(OpenTelemetry), API 문서화(Scalar)를 포함한 완전한 관측 가능성 스택을 보여줍니다. 전통적인 MVC 컨트롤러 대신 구조화되고 고성능의 REST API 접근 방식인 FastEndpoints를 사용합니다.
 
 ## 프로젝트 구조
 
@@ -71,6 +71,7 @@ docker-compose down
 엔드포인트는 `Kdt.WebApi/Endpoints/`에 위치하며 시작 시 자동으로 검색됩니다.
 
 예제 구조:
+
 ```csharp
 public class MyEndpoint : EndpointWithoutRequest
 {
@@ -91,6 +92,7 @@ public class MyEndpoint : EndpointWithoutRequest
 ### 관측 가능성 설정
 
 #### Serilog
+
 `appsettings.json`을 통해 세 가지 싱크로 구성됩니다:
 - Console: TraceId/SpanId가 포함된 포맷된 출력
 - File: `logs/` 디렉터리의 일일 롤링 로그 (7일 보관, 10MB 크기 제한)
@@ -99,6 +101,7 @@ public class MyEndpoint : EndpointWithoutRequest
 모든 싱크는 `Serilog.Sinks.Async`를 통해 비동기적으로 실행됩니다.
 
 #### OpenTelemetry
+
 두 가지 구성 계층:
 1. **ServiceDefaults** (`Kdt.ServiceDefaults/Extensions.cs`): 메트릭, 추적 및 로깅 익스포터가 포함된 표준 Aspire 텔레메트리
 2. **애플리케이션별** (`Kdt.WebApi/OpenTelemetryInitializer.cs`): 서비스 이름, 버전, 네임스페이스 및 배포 환경을 포함한 사용자 정의 리소스 속성
@@ -111,7 +114,9 @@ public class MyEndpoint : EndpointWithoutRequest
 - `OTEL_DEPLOYMENT_ENVIRONMENT`
 
 #### Service Defaults 통합
+
 `Program.cs`의 `builder.AddServiceDefaults()` 호출은 다음을 추가합니다:
+
 - OTLP 익스포터와 함께 OpenTelemetry (메트릭, 추적, 로그)
 - `/health` 및 `/alive`의 헬스 체크 (개발 환경만)
 - 마이크로서비스 통신을 위한 서비스 디스커버리
@@ -120,6 +125,7 @@ public class MyEndpoint : EndpointWithoutRequest
 ### API 문서화
 
 대화형 API 문서화를 위해 Scalar 사용:
+
 - 개발 모드에서만 사용 가능
 - `/scalar/v1` (또는 Scalar UI가 있는 루트 경로)에서 접근 가능
 - OpenAPI 사양은 `/openapi/v1.json`에 위치
@@ -128,6 +134,7 @@ public class MyEndpoint : EndpointWithoutRequest
 ### 구성 파일
 
 환경별 구성 계층화:
+
 1. `appsettings.json` (기본 구성)
 2. `appsettings.{Environment}.json` (환경 오버라이드)
 3. 환경 변수 (최우선 순위)
@@ -136,18 +143,10 @@ public class MyEndpoint : EndpointWithoutRequest
 
 ## 개발 노트
 
-### 새 엔드포인트 추가
-
-1. `Kdt.WebApi/Endpoints/`에 새 클래스 생성
-2. 적절한 FastEndpoints 기본 클래스 상속
-3. 라우팅 및 보안을 위해 `Configure()` 오버라이드
-4. 구현을 위해 `HandleAsync()` 오버라이드
-5. OpenAPI 문서화를 위해 선택적으로 `Summary` 클래스 생성
-6. FastEndpoints가 엔드포인트를 자동 검색 및 등록
-
 ### 로깅 모범 사례
 
 코드베이스는 Serilog를 사용한 구조화된 로깅을 사용합니다. 관련 컨텍스트 속성을 포함하세요:
+
 ```csharp
 _logger.LogInformation("Action performed. {PropertyName}", value);
 ```
@@ -161,20 +160,9 @@ TraceId 및 SpanId는 분산 추적과의 상관관계를 위해 모든 로그 �
 ### 종속성
 
 주요 패키지:
+
 - FastEndpoints 7.1.1 (REST API 프레임워크)
 - OpenTelemetry 1.14.0 (관측 가능성)
 - Serilog.AspNetCore 10.0.0 (로깅)
 - Scalar.AspNetCore 2.12.5 (API 문서화)
 - Aspire.Hosting.AppHost 13.1.0 (로컬 오케스트레이션)
-
-## 레슨 구조
-
-저장소에는 다음을 다루는 레슨 파일(Lesson001.md ~ Lesson006.md)이 포함되어 있습니다:
-- Lesson 001: 필수 프로그램 설치
-- Lesson 002: ASP.NET Core 기본 개념
-- Lesson 003: FastEndpoints 소개 및 Controllers/Minimal APIs와의 비교
-- Lesson 004: Serilog 구성
-- Lesson 005: OpenTelemetry 설정
-- Lesson 006: Scalar API 문서화
-
-이러한 레슨은 코드베이스의 아키텍처 결정에 대한 컨텍스트를 제공합니다.
