@@ -23,22 +23,27 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 try
 {
+    // OpenTelemetry 환경 변수 설정 (AddServiceDefaults 호출 전에 설정 필요)
+    builder.AddOpenTelemetryApplication(Log.Logger);
+
+    // ServiceDefaults 추가 (OpenTelemetry, 헬스 체크, 서비스 디스커버리 등)
+    builder.AddServiceDefaults();
+
     builder.Host.UseSerilog();
-    
+
     builder.Services.AddSerilog((services, lc) =>
     {
         lc.ReadFrom.Configuration(builder.Configuration);
         lc.ReadFrom.Services(services);
     });
     
-    // OpenTelemetry 서비스 등록
-    builder.AddOpenTelemetryApplication(Log.Logger);
-    
     builder.Services.AddFastEndpoints();
     // Scalar API Reference 및 Swagger 설정
     builder.Services.SwaggerDocument();
 
     var app = builder.Build();
+
+    app.MapDefaultEndpoints();
     app.UseFastEndpoints();
     
     if (app.Environment.IsDevelopment())

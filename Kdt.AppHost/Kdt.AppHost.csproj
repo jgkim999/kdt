@@ -1,0 +1,22 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.0.0">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>1334bbb2-7e1e-4c54-8299-640f62c41887</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Kdt.WebApi\Kdt.WebApi.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Aspire.Hosting.AppHost" Version="13.1.0" />
+      <PackageReference Include="Aspire.Hosting.MySql" Version="13.1.0" />
+      <PackageReference Include="Aspire.Hosting.Valkey" Version="13.1.0" />
+      <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.0" />
+    </ItemGroup>
+
+</Project>

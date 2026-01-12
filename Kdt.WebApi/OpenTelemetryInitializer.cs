@@ -13,20 +13,23 @@ public static class OpenTelemetryInitializer
             throw new NullReferenceException();
         appBuilder.Services.Configure<OpenTelemetryConfig>(appBuilder.Configuration.GetSection("OpenTelemetry"));
 
-        logger.Information("OpenTelemetryEndpoint {OpenTelemetryEndpoint}", openTelemetryConfig.Endpoint);
-        
-        var openTelemetryBuilder = appBuilder.Services.AddOpenTelemetry();
-
         // 환경 변수에서 OTLP 엔드포인트 오버라이드 지원
         var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") ?? openTelemetryConfig.Endpoint;
-        logger.Information("OpenTelemetryEndpoint {OpenTelemetryEndpoint}", otlpEndpoint);
+        logger.Information("OpenTelemetry Endpoint: {OpenTelemetryEndpoint}", otlpEndpoint);
 
         var serviceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? openTelemetryConfig.ServiceName;
         var serviceVersion = Environment.GetEnvironmentVariable("OTEL_SERVICE_VERSION") ?? openTelemetryConfig.ServiceVersion;
         var serviceNamespace = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAMESPACE") ?? openTelemetryConfig.ServiceNamespace;
         var deploymentEnvironment = Environment.GetEnvironmentVariable("OTEL_DEPLOYMENT_ENVIRONMENT") ?? openTelemetryConfig.DeploymentEnvironment;
 
-        // OpenTelemetry 리소스 설정
+        // OTEL_EXPORTER_OTLP_ENDPOINT 환경 변수 설정 (ServiceDefaults에서 사용)
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            Environment.SetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT", otlpEndpoint);
+        }
+
+        // OpenTelemetry 리소스 속성 추가 (ServiceDefaults의 설정에 추가됨)
+        var openTelemetryBuilder = appBuilder.Services.AddOpenTelemetry();
         openTelemetryBuilder.ConfigureResource(resource =>
         {
             resource.AddService(
@@ -40,9 +43,7 @@ public static class OpenTelemetryInitializer
                 ["host.name"] = Environment.MachineName,
             });
         });
-        
-        openTelemetryBuilder.UseOtlpExporter(
-            OpenTelemetry.Exporter.OtlpExportProtocol.Grpc,
-            new Uri(otlpEndpoint));
+
+        // 참고: UseOtlpExporter는 ServiceDefaults에서 이미 호출되므로 여기서 호출하지 않음
     }
 }
