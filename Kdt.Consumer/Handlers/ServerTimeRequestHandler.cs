@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Kdt.Share.Messages;
 using Wolverine;
 
@@ -8,6 +9,7 @@ namespace Kdt.Consumer.Handlers;
 /// </summary>
 public class ServerTimeRequestHandler
 {
+    private static readonly ActivitySource ActivitySource = new("Kdt.Consumer");
     private readonly ILogger<ServerTimeRequestHandler> _logger;
 
     public ServerTimeRequestHandler(ILogger<ServerTimeRequestHandler> logger)
@@ -21,6 +23,15 @@ public class ServerTimeRequestHandler
     /// </summary>
     public ServerTimeResponse Handle(ServerTimeRequest request)
     {
+        using var activity = ActivitySource.StartActivity("ServerTimeRequest.Handle", ActivityKind.Consumer);
+
+        // 추적 정보에 메타데이터 추가
+        activity?.SetTag("messaging.system", "rabbitmq");
+        activity?.SetTag("messaging.destination", "servertime-requests");
+        activity?.SetTag("messaging.operation", "process");
+        activity?.SetTag("request.id", request.RequestId.ToString());
+        activity?.SetTag("request.timestamp", request.RequestedAt.ToString("o"));
+
         _logger.LogInformation("Processing ServerTimeRequest. RequestId: {RequestId}, RequestedAt: {RequestedAt}",
             request.RequestId, request.RequestedAt);
 
@@ -33,6 +44,11 @@ public class ServerTimeRequestHandler
             ProcessedAt = DateTime.UtcNow,
             ProcessedBy = "kdt-consumer"
         };
+
+        // 응답 정보도 추적에 추가
+        activity?.SetTag("response.local", response.Local.ToString("o"));
+        activity?.SetTag("response.utc", response.Utc.ToString("o"));
+        activity?.SetTag("response.processed_by", response.ProcessedBy);
 
         _logger.LogInformation("ServerTimeRequest processed. RequestId: {RequestId}", request.RequestId);
 

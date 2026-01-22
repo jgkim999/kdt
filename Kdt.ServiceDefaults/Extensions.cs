@@ -62,6 +62,9 @@ public static class Extensions
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    .AddSource("Wolverine") // Wolverine 메시징 추적
+                    .AddSource("Kdt.WebApi") // WebApi 애플리케이션 추적
+                    .AddSource("Kdt.Consumer") // Consumer 애플리케이션 추적
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>
