@@ -1,8 +1,11 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
+using Kdt.Share.Messages;
 using Kdt.WebApi;
 using Scalar.AspNetCore;
 using Serilog;
+using Wolverine;
+using Wolverine.RabbitMQ;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +40,30 @@ try
         lc.ReadFrom.Services(services);
     });
     
+    // Wolverine 메시징 구성
+    builder.Host.UseWolverine(opts =>
+    {
+        // RabbitMQ 연결 문자열 가져오기 (Aspire에서 제공)
+        var rabbitMqConnection = builder.Configuration.GetConnectionString("rabbitmq");
+        if (string.IsNullOrEmpty(rabbitMqConnection))
+        {
+            // 로컬 개발용 기본값
+            rabbitMqConnection = "amqp://guest:guest@localhost:5672";
+            Log.Warning("RabbitMQ connection string not found, using default: {Connection}", rabbitMqConnection);
+        }
+
+        opts.UseRabbitMq(new Uri(rabbitMqConnection))
+            .AutoProvision()
+            .AutoPurgeOnStartup();
+
+        // ServerTimeRequest를 Consumer로 발행
+        opts.PublishMessage<ServerTimeRequest>()
+            .ToRabbitQueue("servertime-requests");
+
+        // ServerTimeResponse를 수신 (Consumer로부터)
+        opts.ListenToRabbitQueue("servertime-responses-webapi");
+    });
+
     builder.Services.AddFastEndpoints();
     // Scalar API Reference 및 Swagger 설정
     builder.Services.SwaggerDocument();
