@@ -1,7 +1,9 @@
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Kdt.Consumer;
+using Kdt.Consumer.Data;
 using Kdt.Share.Messages;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
 using Wolverine;
@@ -40,6 +42,17 @@ try
         lc.ReadFrom.Services(services);
     });
 
+    // MySQL 데이터베이스 구성
+    var connectionString = builder.Configuration.GetConnectionString("kdt-db");
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        connectionString = "Server=localhost;Port=3306;Database=kdt;User=root;Password=password;";
+        Log.Warning("MySQL connection string not found, using default: {Connection}", connectionString);
+    }
+
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
     // Wolverine 메시징 구성
     builder.Host.UseWolverine(opts =>
     {
@@ -62,6 +75,13 @@ try
         // ServerTimeResponse를 WebApi로 발행
         opts.PublishMessage<ServerTimeResponse>()
             .ToRabbitQueue("servertime-responses-webapi");
+
+        // RegisterUserRequest 메시지를 수신 (WebApi로부터)
+        opts.ListenToRabbitQueue("register-user-requests");
+
+        // RegisterUserResponse를 WebApi로 발행
+        opts.PublishMessage<RegisterUserResponse>()
+            .ToRabbitQueue("register-user-responses-webapi");
     });
 
     builder.Services.AddFastEndpoints();
@@ -69,6 +89,23 @@ try
     builder.Services.SwaggerDocument();
 
     var app = builder.Build();
+
+    // 데이터베이스 초기화
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        try
+        {
+            Log.Information("Ensuring database is created...");
+            await dbContext.Database.EnsureCreatedAsync();
+            Log.Information("Database initialized successfully");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to initialize database");
+            throw;
+        }
+    }
 
     app.MapDefaultEndpoints();
     app.UseFastEndpoints();

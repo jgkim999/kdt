@@ -62,6 +62,13 @@ try
 
         // ServerTimeResponse를 수신 (Consumer로부터)
         opts.ListenToRabbitQueue("servertime-responses-webapi");
+
+        // RegisterUserRequest를 Consumer로 발행
+        opts.PublishMessage<RegisterUserRequest>()
+            .ToRabbitQueue("register-user-requests");
+
+        // RegisterUserResponse를 수신 (Consumer로부터)
+        opts.ListenToRabbitQueue("register-user-responses-webapi");
     });
 
     builder.Services.AddFastEndpoints();
