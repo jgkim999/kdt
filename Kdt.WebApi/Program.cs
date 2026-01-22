@@ -4,6 +4,7 @@ using Kdt.Share.Messages;
 using Kdt.WebApi;
 using Scalar.AspNetCore;
 using Serilog;
+using StackExchange.Redis;
 using Wolverine;
 using Wolverine.RabbitMQ;
 
@@ -39,7 +40,22 @@ try
         lc.ReadFrom.Configuration(builder.Configuration);
         lc.ReadFrom.Services(services);
     });
-    
+
+    // Valkey (Redis) 연결 구성
+    var valkeyConnection = builder.Configuration.GetConnectionString("valkey");
+    if (string.IsNullOrEmpty(valkeyConnection))
+    {
+        // 로컬 개발용 기본값
+        valkeyConnection = "localhost:6379";
+        Log.Warning("Valkey connection string not found, using default: {Connection}", valkeyConnection);
+    }
+
+    var redisConfig = ConfigurationOptions.Parse(valkeyConnection);
+    redisConfig.IncludeDetailInExceptions = true;
+    var redisConnection = ConnectionMultiplexer.Connect(redisConfig);
+
+    builder.Services.AddSingleton<IConnectionMultiplexer>(redisConnection);
+
     // Wolverine 메시징 구성
     builder.Host.UseWolverine(opts =>
     {
@@ -69,6 +85,13 @@ try
 
         // RegisterUserResponse를 수신 (Consumer로부터)
         opts.ListenToRabbitQueue("register-user-responses-webapi");
+
+        // LoginRequest를 Consumer로 발행
+        opts.PublishMessage<LoginRequest>()
+            .ToRabbitQueue("login-requests");
+
+        // LoginResponse를 수신 (Consumer로부터)
+        opts.ListenToRabbitQueue("login-responses-webapi");
     });
 
     builder.Services.AddFastEndpoints();
