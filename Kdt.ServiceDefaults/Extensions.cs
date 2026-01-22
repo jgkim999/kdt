@@ -73,7 +73,16 @@ public static class Extensions
                     )
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
-                    .AddHttpClientInstrumentation();
+                    .AddHttpClientInstrumentation()
+                    .AddEntityFrameworkCoreInstrumentation(options =>
+                    {
+                        // 커맨드 실행 정보를 추적에 포함
+                        options.EnrichWithIDbCommand = (activity, command) =>
+                        {
+                            // SQL 쿼리 텍스트를 추적에 추가
+                            activity.SetTag("db.statement", command.CommandText);
+                        };
+                    });
             });
 
         builder.AddOpenTelemetryExporters();
