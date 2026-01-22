@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Kdt.WebApi\Kdt.WebApi.csproj" />
+      <ProjectReference Include="..\Kdt.Consumer\Kdt.Consumer.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -16,10 +16,25 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq", userName: rabbitmqUser, password:
     .WithManagementPlugin();
 
 // Kdt.WebApi 프로젝트 추가 및 리소스 참조
+// WaitFor를 사용하여 인프라 서비스가 준비된 후 시작되도록 설정
 builder.AddProject<Projects.Kdt_WebApi>("kdt-webapi")
     .WithExternalHttpEndpoints()
     .WithReference(mysql)
     .WithReference(valkey)
-    .WithReference(rabbitmq);
+    .WithReference(rabbitmq)
+    .WaitFor(mysql)
+    .WaitFor(valkey)
+    .WaitFor(rabbitmq);
+
+// Kdt.Consumer 프로젝트 추가 및 리소스 참조
+// WaitFor를 사용하여 인프라 서비스가 준비된 후 시작되도록 설정
+builder.AddProject<Projects.Kdt_Consumer>("kdt-consumer")
+    .WithExternalHttpEndpoints()
+    .WithReference(mysql)
+    .WithReference(valkey)
+    .WithReference(rabbitmq)
+    .WaitFor(mysql)
+    .WaitFor(valkey)
+    .WaitFor(rabbitmq);
 
 builder.Build().Run();

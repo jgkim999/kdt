@@ -1,0 +1,6 @@
+@Kdt.Consumer_HostAddress = http://localhost:5271
+
+GET {{Kdt.Consumer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
